@@ -22,7 +22,8 @@ async function getUrls(url: string): Promise<{ url: string; name: string }[]> {
     });
   }
 
-  return urls.reverse();
+  const fromIndex = urls.findIndex(elt => elt.url === Deno.args[2])
+  return (fromIndex === -1 ? urls : urls.slice(0, fromIndex)).reverse();
 }
 
 async function getPlayerUrl(url: string): Promise<string> {
