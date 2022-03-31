@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { DOMParser } from "https://deno.land/x/deno_dom/deno-dom-wasm.ts";
 import { getUrl } from "./parser.js";
+import ProgressBar from "https://deno.land/x/progress@v1.2.4/mod.ts";
 
 const mainUrl = "https://" + new URL(Deno.args[0]).host;
 
@@ -81,10 +82,43 @@ for (const dataRow of videoUrls) {
   const fileName = (Deno.args[1] ? Deno.args[1] : "./") +
     dataRow.name.split(":")[0] + ".mp4";
 
-  const blob = await res.blob()!;
-  Deno.writeFileSync(fileName, new Uint8Array(await blob.arrayBuffer()), {
-    create: true,
+  const reader = res.body?.getReader()!;
+  const length = +res.headers.get("Content-Length")!;
+  let received = 0;
+  const chunks = [];
+
+  const bar = new ProgressBar({
+    title: "Download " + fileName,
+    complete: "=",
+    incomplete: "-",
+    display: "[:bar] :percent :time :completed/:total",
+    total: length,
+    clear: true
   });
 
-  console.log("Downloaded: " + fileName);
+  while (true) {
+    const { done, value } = await reader.read();
+
+    if (done) {
+      bar.end();
+      console.log("Finished downloading " + fileName);
+      break;
+    }
+
+    chunks.push(value);
+    received += value?.length!;
+
+    bar.render(received);
+  }
+
+  const allChunks = new Uint8Array(received);
+  let position = 0;
+  for (const chunk of chunks) {
+    allChunks.set(chunk!, position);
+    position += chunk?.length!;
+  }
+
+  Deno.writeFileSync(fileName, allChunks, {
+    create: true,
+  });
 }
