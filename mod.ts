@@ -1,15 +1,19 @@
 // deno-lint-ignore-file no-explicit-any
-import { DOMParser } from "https://deno.land/x/deno_dom/deno-dom-wasm.ts";
+import { DOMParser, HTMLDocument } from "https://deno.land/x/deno_dom/deno-dom-wasm.ts";
 import { getUrl } from "./parser.js";
 import ProgressBar from "https://deno.land/x/progress@v1.2.4/mod.ts";
 
 const mainUrl = "https://" + new URL(Deno.args[0]).host;
 
+async function fetchAndParse(url: string): Promise<HTMLDocument> {
+        const raw = (await (await fetch(url)).text());
+        return new DOMParser().parseFromString(raw, "text/html")!;
+}
+
 async function getUrls(url: string): Promise<{ url: string; name: string }[]> {
   const urls = [];
-  const raw = (await (await fetch(url)).text());
-  const parsed = new DOMParser().parseFromString(raw, "text/html");
-  const tableData = parsed?.querySelector("tbody")?.childNodes!;
+  const parsed = await fetchAndParse(url);
+  const tableData = parsed.querySelector("tbody")?.childNodes!;
   const rows = [...tableData].filter((elt) => elt.nodeName === "TR");
   for (const row of rows) {
     const nodes = [...row.childNodes].filter((elt) => elt.nodeName === "TD");
@@ -45,9 +49,8 @@ async function getPlayerUrl(url: string): Promise<string> {
 }
 
 async function getCDAUrl(url: string): Promise<string> {
-  const raw = (await (await fetch(url)).text());
-  const parsed = new DOMParser().parseFromString(raw, "text/html")!;
-  return [...parsed.querySelectorAll("iframe")].map((elt) =>
+const parsed = await fetchAndParse(url);
+ return [...parsed.querySelectorAll("iframe")].map((elt) =>
     (elt as any).attributes.src
   ).filter((elt) => elt.indexOf("cda") > 0)[0];
 }
