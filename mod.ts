@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { DOMParser, HTMLDocument } from "https://deno.land/x/deno_dom/deno-dom-wasm.ts";
+import { DOMParser, HTMLDocument } from "https://deno.land/x/deno_dom@v0.1.36-alpha/deno-dom-wasm.ts";
 import { getUrl } from "./parser.js";
 import ProgressBar from "https://deno.land/x/progress@v1.2.4/mod.ts";
 
@@ -19,7 +19,8 @@ async function getUrls(url: string): Promise<{ url: string; name: string }[]> {
     const nodes = [...row.childNodes].filter((elt) => elt.nodeName === "TD");
 
     const anchor = nodes[0].childNodes[0];
-    const href = (anchor as any).attributes.href;
+    const href = (anchor as any).getAttribute('href');
+
     urls.push({
       url: mainUrl + "/" + href,
       name: anchor.textContent.trim(),
@@ -34,6 +35,7 @@ async function getPlayerUrl(url: string): Promise<string> {
   const raw = (await (await fetch(url)).text());
   const parsed = new DOMParser().parseFromString(raw, "text/html")!;
   const tableData = parsed?.querySelector("tbody")?.childNodes!;
+
   const rows = [...tableData].filter((elt) => elt.nodeName === "TR");
 
   for (const row of rows) {
@@ -42,7 +44,7 @@ async function getPlayerUrl(url: string): Promise<string> {
     const service = nodes[2].textContent;
     if (service === "cda") {
       return mainUrl + "/odtwarzacz-" +
-        (nodes[4].firstChild as any).attributes.rel + ".html";
+        (nodes[4].firstChild as any).getAttribute('rel') + ".html";
     }
   }
   return "";
@@ -51,7 +53,7 @@ async function getPlayerUrl(url: string): Promise<string> {
 async function getCDAUrl(url: string): Promise<string> {
 const parsed = await fetchAndParse(url);
  return [...parsed.querySelectorAll("iframe")].map((elt) =>
-    (elt as any).attributes.src
+    (elt as any).getAttribute('src')
   ).filter((elt) => elt.indexOf("cda") > 0)[0];
 }
 

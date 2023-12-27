@@ -1,11 +1,11 @@
-import { DOMParser } from "https://deno.land/x/deno_dom/deno-dom-wasm.ts";
+import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.36-alpha/deno-dom-wasm.ts";
 
 async function getFile(url) {
   const raw = (await (await fetch(url)).text());
   const parsed = new DOMParser().parseFromString(raw, "text/html");
 
   const x = parsed.querySelector(`#mediaplayer${getID(url)}`);
-  return JSON.parse(x.attributes.player_data).video.file;
+  return JSON.parse(x.getAttribute("player_data")).video.file;
 }
 
 function getID(url) {
